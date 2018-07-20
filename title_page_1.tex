@@ -26,7 +26,7 @@
 % title page.
 %t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Template báo cáo KHTN}
+\title{Báo cáo đồ án cuối kỳ}
 %----------------------------------------------------------------------------------------
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
@@ -62,14 +62,14 @@
 
 \textsc{\LARGE Đại học Khoa học tự nhiên}\\[1.5cm] % Name of your university/college
 \textsc{\Large Ngành hệ thống thông tin}\\[0.5cm] % Major heading such as course name
-\textsc{\large Môn học: Tên môn học }\\[0.5cm] % Minor heading such as course title
+\textsc{\large Môn học: Máy học thống kê }\\[0.5cm] % Minor heading such as course title
 
 %----------------------------------------------------------------------------------------
 %	TITLE SECTION
 %----------------------------------------------------------------------------------------
 
 \HRule \\[0.4cm]
-{ \huge \bfseries Template bao cao}\\[0.4cm] % Title of your document
+{ \huge \bfseries Báo cáo đồ án ứng dụng Yolo}\\[0.4cm] % Title of your document
 \HRule \\[1.5cm]
  
 %----------------------------------------------------------------------------------------
@@ -79,14 +79,14 @@
 \begin{minipage}{0.4\textwidth}
 \begin{flushleft} \large
 \emph{Học viên:}\\
-Tên học viên -- MSSV % Your name
+Thái Thiện -- 17C 12 031 % Your name
 \end{flushleft}
 \end{minipage}
 ~
 \begin{minipage}{0.4\textwidth}
 \begin{flushright} \large
 \emph{Giảng viên:} \\
-TS. Tên giảng viên % Supervisor's Name
+TS. Ngô Minh Nhựt % Supervisor's Name
 \end{flushright}
 \end{minipage}\\[2cm]
 
@@ -114,10 +114,88 @@ TS. Tên giảng viên % Supervisor's Name
 \end{titlepage}
 
 
-\section{Giới thiệu}
-Đây là template để làm báo cáo. Hỗ trợ gõ tiếng việt.
+\section{Yolo}
 
-\subsection{Chèn hình}
+Trang chủ: \url{https://pjreddie.com/darknet/yolo/} 
+
+YOLO - You Only look once - là hệ thống nhận dạng vật thể thời gian thực.
+
+Trong đồ án này, chúng tôi sử dụng YOLOv3 
+
+\section{Cài đặt Yolo để nhận dạng ảnh}
+
+\subsection{Mã nguồn của tác giả YOLO}
+
+Tác giả có hướng dẫn cách cài đặt YOLO tại trang chủ  \url{https://pjreddie.com/darknet/yolo/}. Máy tính chúng tôi dùng sử dụng hệ điều hành Ubuntu 16.04 LTS. 
+
+Cài những thứ cần thiết để build với dòng lệnh ở lstlisting \ref{lst:buildessential}.
+
+\begin{lstlisting}[caption={Cài những gói cần thiết để build}, label={lst:buildessential}, language=bash]
+sudo apt-get build-essential
+sudo apt-get install git
+\end{lstlisting}
+
+Sau đó tải mã nguồn từ Github \footnote{\url{https://github.com/pjreddie/darknet}} về build với các dòng lệnh sau (lstlisting \ref{lst:buildyolo})
+
+
+\begin{lstlisting}[caption={Tải và build mã nguồn}, label={lst:buildyolo}, language=bash]
+git clone https://github.com/pjreddie/darknet   
+cd darknet 
+make  
+\end{lstlisting}
+
+Sau đó tải model (loại lớn) \footnote{\url{https://pjreddie.com/media/files/yolov3.weights}}  huấn luyện kèm với config \footnote{\url{https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg}}. Ngoài ra còn có loại nhỏ (tiny) \footnote{\url{https://pjreddie.com/media/files/yolov3-tiny.weights}} và config nhỏ \footnote{\url{https://github.com/pjreddie/darknet/blob/master/cfg/yolov3-tiny.cfg}}. 
+
+Sau đó, chạy theo ví dụ của tác giả (lstlisting \ref{lst:runexample}) hoặc theo cú pháp (lstlisting \ref{lst:runsyntax})
+
+\begin{lstlisting}[caption={ví dụ chạy nhận diện vật thể}, label={lst:runexample}, language=bash]
+./darknet detect cfg/yolov3.cfg yolov3.weights data/dog.jpg
+\end{lstlisting}
+
+
+\begin{lstlisting}[caption={ví dụ chạy nhận diện vật thể}, label={lst:runsyntax}, language=bash]
+./darknet detect <config path> <weight path> <input image>
+\end{lstlisting}
+
+
+\subsection{Cài đặt YOLO bằng python}
+
+Các tập tin python tác giả cung cấp có vẻ không tương thích với đoạn mã c++ mà chúng tôi build được ở bước trên. Vì vậy chúng tôi quyết định tìm kiếm giải pháp khác. Chúng tôi kế thừa từ mã nguồn của Ayoosh Kathuria \footnote{\url{https://github.com/ayooshkathuria/pytorch-yolo-v3}} và cải tiến cho phù hợp với nhu cầu \footnote{\url{https://github.com/ttpro1995/pytorch-yolo-v3}}.  
+
+Yêu cầu: 
+\begin{itemize}
+\item python 3.6
+\item Anaconda \footnote{\url{https://www.anaconda.com/download/}}
+\item Pytorch \footnote{\url{https://pytorch.org/}}
+\item opencv-python 
+\end{itemize}
+
+\subsubsection{Yolo Wrapper - Một lớp (class) dễ sử dụng}
+
+Chúng tôi xây dựng một lớp YoloWrapper bao gồm hàm tạo và hàm predict để tiện việc gắn vào ứng dụng 
+
+\paragraph{Khởi tạo}
+Bước khởi tạo cần làm 3 việc: nạp danh sách lớp (từ coco.names), nạp mô hình trọng số và config. 
+
+\paragraph{Dự đoán}
+Bước dự đoán thực hiện các bước sau 
+
+\begin{itemize}
+\item Tiền xử lý: biến đổi ảnh đầu vào cho phù hợp với chiều của mạng yolo (416) 
+\item Dự đoán: bỏ ma trận hình ảnh sau khi tiền xử lý vào mô hình yolo 
+\item Ghi kết quả: từ kết quả dự đoán, ghi kết quả theo dạng [hình trong batch, tọa độ khung 1, tọa độ khung 2, tọa độ khung 3, tọa độ khung 4, xxx, độ tự tin, số thứ tự của tên vật thể]. Bước ghi kết quả chỉ ghi lại kết quả có độ tự tin lớn hơn threshold 
+\item Scale: cái khung ở bước ghi kết quả dựa và cái hình sau khi đã biến đổi cho phù hợp với mô hình. Ta cần biến đổ nó trở lại đúng với ảnh gốc để vẽ vào ảnh gốc 
+\item Vẽ khung dự đoán và tên vật thể vào ảnh gốc và trả về kết quả 
+\end{itemize} 
+
+
+\subsubsection{Mẫu thiết kế Singleton}
+
+\section{Dùng Django để tạo ứng dụng web cho yolo}
+
+
+
+
 
 Trích dẫn hình \ref{fig:node} trong đoạn chữ. 
 
