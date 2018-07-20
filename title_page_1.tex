@@ -181,15 +181,58 @@ Bước khởi tạo cần làm 3 việc: nạp danh sách lớp (từ coco.name
 Bước dự đoán thực hiện các bước sau 
 
 \begin{itemize}
-\item Tiền xử lý: biến đổi ảnh đầu vào cho phù hợp với chiều của mạng yolo (416) 
+\item Tiền xử lý: biến đổi ảnh đầu vào theo phương pháp letterbox cho phù hợp với chiều của mạng yolo (416) 
 \item Dự đoán: bỏ ma trận hình ảnh sau khi tiền xử lý vào mô hình yolo 
 \item Ghi kết quả: từ kết quả dự đoán, ghi kết quả theo dạng [hình trong batch, tọa độ khung 1, tọa độ khung 2, tọa độ khung 3, tọa độ khung 4, xxx, độ tự tin, số thứ tự của tên vật thể]. Bước ghi kết quả chỉ ghi lại kết quả có độ tự tin lớn hơn threshold 
 \item Scale: cái khung ở bước ghi kết quả dựa và cái hình sau khi đã biến đổi cho phù hợp với mô hình. Ta cần biến đổ nó trở lại đúng với ảnh gốc để vẽ vào ảnh gốc 
 \item Vẽ khung dự đoán và tên vật thể vào ảnh gốc và trả về kết quả 
 \end{itemize} 
 
+Công thức để scale hình ban đầu về  kích thước cho mô hình. Đầu tiên hình $h_0, w_0$ sẽ được scale về đúng tỉ lệ thành $h_1, w_1$, sau đó sẽ được padding để có kích thước theo chuẩn của model $h, w$
+% new_h = int(img_h * min(w/img_w, h/img_h))
+
+\begin{equation}
+    h_1 = h_0 * min(\frac{w}{w_0}, \frac{h}{h_0})   
+\end{equation}
+
+\begin{equation}
+    w_1 = w_0 * min(\frac{w}{w_0}, \frac{h}{h_0})   
+\end{equation}
+
+Công thức để scale khung về đúng ban đầu 
+
+\begin{equation}
+    scaling\_horizontal = \frac{inp\_dim}{im\_dim_0}  
+\end{equation}
+
+\begin{equation}
+    scaling\_vertical = \frac{inp\_dim}{im\_dim_1}
+\end{equation}
+
+\begin{equation}
+    scaling\_factor = min(scaling\_horizontal, scaling\_vertical)
+\end{equation}
+
+
+\begin{equation}
+    output_{1,3} = output_{1,3} - \frac{inp\_dim - scaling\_factor * im\_dim_0 }{2} 
+\end{equation}
+
+\begin{equation}
+    output_{2,4} = output_{2,4} - \frac{inp\_dim - scaling\_factor * im\_dim_1 }{2} 
+\end{equation}
+
+\begin{equation}
+    output_{1,3} = \frac{output_{1,3}}{scaling\_factor}  
+\end{equation}
+
+\begin{equation}
+    output_{2,4} = \frac{output_{2,4}}{scaling\_factor}  
+\end{equation}
 
 \subsubsection{Mẫu thiết kế Singleton}
+
+
 
 \section{Dùng Django để tạo ứng dụng web cho yolo}
 
