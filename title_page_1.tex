@@ -40,6 +40,7 @@
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage{listings}
 \usepackage{hyperref}
+\usepackage{indentfirst} % thục dòng cái dòng đầu tiên 
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -120,13 +121,13 @@ Trang chủ: \url{https://pjreddie.com/darknet/yolo/}
 
 YOLO - You Only look once - là hệ thống nhận dạng vật thể thời gian thực.
 
-Trong đồ án này, chúng tôi sử dụng YOLOv3 
+Trong đồ án này, chúng tôi sử dụng YOLOv3.
 
 \section{Cài đặt Yolo để nhận dạng ảnh}
 
 \subsection{Mã nguồn của tác giả YOLO}
 
-Tác giả có hướng dẫn cách cài đặt YOLO tại trang chủ  \url{https://pjreddie.com/darknet/yolo/}. Máy tính chúng tôi dùng sử dụng hệ điều hành Ubuntu 16.04 LTS. 
+Tác giả có hướng dẫn cách cài đặt YOLO \cite{yolov3} tại trang chủ  \url{https://pjreddie.com/darknet/yolo/}. Máy tính chúng tôi dùng sử dụng hệ điều hành Ubuntu 16.04 LTS. 
 
 Cài những thứ cần thiết để build với dòng lệnh ở lstlisting \ref{lst:buildessential}.
 
@@ -153,7 +154,7 @@ Sau đó, chạy theo ví dụ của tác giả (lstlisting \ref{lst:runexample}
 \end{lstlisting}
 
 
-\begin{lstlisting}[caption={ví dụ chạy nhận diện vật thể}, label={lst:runsyntax}, language=bash]
+\begin{lstlisting}[caption={cú pháp chạy nhận diện vật thể}, label={lst:runsyntax}, language=bash]
 ./darknet detect <config path> <weight path> <input image>
 \end{lstlisting}
 
@@ -161,6 +162,8 @@ Sau đó, chạy theo ví dụ của tác giả (lstlisting \ref{lst:runexample}
 \subsection{Cài đặt YOLO bằng python}
 
 Các tập tin python tác giả cung cấp có vẻ không tương thích với đoạn mã c++ mà chúng tôi build được ở bước trên. Vì vậy chúng tôi quyết định tìm kiếm giải pháp khác. Chúng tôi kế thừa từ mã nguồn của Ayoosh Kathuria \footnote{\url{https://github.com/ayooshkathuria/pytorch-yolo-v3}} và cải tiến cho phù hợp với nhu cầu \footnote{\url{https://github.com/ttpro1995/pytorch-yolo-v3}}.  
+
+Mã nguồn: \url{https://github.com/ttpro1995/pytorch-yolo-v3}
 
 Yêu cầu: 
 \begin{itemize}
@@ -172,7 +175,7 @@ Yêu cầu:
 
 \subsubsection{Yolo Wrapper - Một lớp (class) dễ sử dụng}
 
-Chúng tôi xây dựng một lớp YoloWrapper bao gồm hàm tạo và hàm predict để tiện việc gắn vào ứng dụng 
+Chúng tôi xây dựng một lớp YoloWrapper \footnote{Mã nguồn \url{https://github.com/ttpro1995/pytorch-yolo-v3/blob/master/yolo_wrapper.py}} bao gồm hàm tạo và hàm predict để tiện việc gắn vào ứng dụng 
 
 \paragraph{Khởi tạo}
 Bước khởi tạo cần làm 3 việc: nạp danh sách lớp (từ coco.names), nạp mô hình trọng số và config. 
@@ -232,37 +235,103 @@ Công thức để scale khung về đúng ban đầu
 
 \subsubsection{Mẫu thiết kế Singleton}
 
+Khi xây dựng ứng dụng, mô hình YOLO chỉ cần khởi tạo một lần và sau đó lưu trong bộ nhớ. Những lần nhận diện ảnh sẽ sử dụng lại mô hình đã nạp. 
+
+Chúng tôi xây dựng một lớp theo mẫu thiết kế Singleton \footnote{\url{http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html}} để xây dựng lớp SingletonYoloWrapper \footnote{Mã nguồn \url{https://github.com/ttpro1995/pytorch-yolo-v3/blob/master/singleton_yolo_wrapper.py}}.
+
+SingletonYoloWrapper có chứa một biến tĩnh chứa YoloWrapper (bao gồm mô hình trọng số YOLO và config). Biên tĩnh đó sẽ được khởi tạo khi chạy ứng dụng. Mỗi lần dự đoán, hệ thống sẽ sử dụng biến tĩnh đó để dự đoán. 
 
 
 \section{Dùng Django để tạo ứng dụng web cho yolo}
 
+Mã nguồn: \url{https://bitbucket.org/ttpro1995/yolodj/src/master/}
+
+Chúng tôi chọn Django vị nó dùng cho Python, dễ dàng tích hợp với YoloWrapper và SingletonYoloWrapper ở trên.
+
+\subsection{Các yêu cầu}
+
+Các gói yêu cầu được ghi trong requirements.txt
+
+\begin{itemize}
+\item http://download.pytorch.org/whl/cpu/torch-0.4.0-cp36-cp36m-linux\_x86\_64.whl
+\item torchvision
+\item opencv-python
+\item Django
+\item djangorestframework
+\item pandas
+\item gunicorn
+\item whitenoise
+\end{itemize}
+
+\subsection{Các API endpoint}
+
+\subsubsection{API Endpoint /yolo/upload\_for\_image\_path}
+Method: POST
+
+Content-Type: multipart/form-data 
+
+Các tham số của form: 
+\begin{itemize}
+\item file : là một tập tin 
+\end{itemize}
+
+Trả về: đường dẫn tới tập tin ảnh ở /static/
+
+Thời gian kể từ lúc gửi request đến khi nhận response (bao gồm do đường truyền mạng, thời gian dự đoán của model)
+
+\begin{itemize}
+\item tại máy cá nhân: 1881 ms 
+\item tại máy chủ (Digital Ocean, Singapore): 1851 ms
+\end{itemize}
+
+Máy chủ của Digital Ocean chạy nhanh hơn. 
+
+\subsubsection{API Endpoint /yolo/}
+Method: GET
+
+Trả về HTML, là giao diện chính của app. 
+
+\begin{itemize}
+\item tại máy cá nhân:  ms 
+\item tại máy chủ (Digital Ocean, Singapore): 50 ms
+\end{itemize}
+
+\subsection{Deployment}
+Chúng tôi dùng máy chủ của Digial Ocean \$15 có cấu hình 
+
+\begin{itemize}
+\item 2GB RAM
+\item 2vCPU 
+\end{itemize}
+
+Chúng tôi dùng Dokku \footnote{\url{https://github.com/dokku/dokku}} - một dạng Platform as a Service mã nguồn mỡ - để deploy ứng dụng lên máy chủ. Dokku sẽ đọc từ tẹp requirements.txt và tự cài môi trường cần thiết để chạy ứng dụng. 
+
+Chúng tôi dùng SSL của Let's Encrypt \footnote{\url{https://letsencrypt.org/}} để tạo kết nối bảo mật HTTPS.
+
+Demo có thể xem tại \url{https://yolodj.thaithienapp.club/yolo/}
 
 
+% % % Commands to include a figure:
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.5\textwidth]{image/node.PNG}
+% \caption{\label{fig:node} Nút}
+% \end{figure}
 
 
-Trích dẫn hình \ref{fig:node} trong đoạn chữ. 
-
-% % Commands to include a figure:
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.5\textwidth]{image/node.PNG}
-\caption{\label{fig:node} Nút}
-\end{figure}
+% % chuong 3
+% \section{Chèn đoạn code}
 
 
-% chuong 3
-\section{Chèn đoạn code}
+% ví dụ code \ref{lst:vdcode} là code python 
 
 
-ví dụ code \ref{lst:vdcode} là code python 
+% \begin{lstlisting}[caption={Đoạn code}, label={lst:vdcode}, language=python]
+% s = "I am Pusheen the cat"
+% print(s)
+% \end{lstlisting}
 
-
-\begin{lstlisting}[caption={Đoạn code}, label={lst:vdcode}, language=python]
-s = "I am Pusheen the cat"
-print(s)
-\end{lstlisting}
-
-ví dụ trích dẫn \cite{robinson2013graph}
+% ví dụ trích dẫn \cite{robinson2013graph}
 
 
 \bibliographystyle{IEEEtran}
@@ -303,7 +372,7 @@ ví dụ trích dẫn \cite{robinson2013graph}
 %       = \frac{1}{n}\sum_{i}^{n} X_i$$
 % denote their mean. Then as $n$ approaches infinity, the random variables $\sqrt{n}(S_n - \mu)$ converge in distribution to a normal $\mathcal{N}(0, \sigma^2)$.
 
-% \subsection{Lists}
+% \subsection{Lists}The Torn City Stock Exchan
 
 % You can make lists with automatic numbering \dots
 
